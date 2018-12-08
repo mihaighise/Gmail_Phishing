@@ -1,0 +1,94 @@
+int step;
+int seconds;
+float otherState[12], myState[12];
+float hookingCenter[3];
+float otherAttitude[3];
+float pos[3];
+float otherQ[13];
+float myPos[3];
+float myEuler[3];
+float otherEuler[12];
+float myHook[3];
+#define angles myEuler
+void init()
+{
+	step  = 1;
+	seconds = 0;
+}
+void loop()
+{
+    seconds = seconds + 1;
+    
+    api.getOtherZRState(otherState);
+    api.getMyZRState(myState);
+    
+    for(int i = 0; i < 3; i++)
+        otherAttitude[i] = otherState[i+6];
+    
+    // x^2+y^2+z^2 = 1
+    for(int i = 0; i < 3; i++)
+    {
+        hookingCenter[i] = otherAttitude[i]*0.17095f + otherState[i];
+        myPos[i] = otherAttitude[i]*2*0.17095f + otherState[i];
+        myHook[i] = myState[i+6]*0.17095f + myState[i];
+    }
+    DEBUG(("myPos = %f %f %f", myPos[0], myPos[1], myPos[2]));
+    DEBUG(("myHook = %f %f %f", myHook[0], myHook[1], myHook[2]));
+    
+    if(step == 1)
+    {
+        //0.02, 0, -0.025
+    }
+    
+    
+    
+    api.setPositionTarget(myPos);
+    game.getOtherEulerState(otherEuler);
+        
+    angles[0] = -otherEuler[6] + PI;
+    angles[1] = otherEuler[7] + PI;
+    angles[2] = otherEuler[8];
+        
+    game.setEulerTarget(myEuler);
+        
+    if(step <= 2)    
+        if(distanceBetween(myState, pos) < 0.005f)
+            step = step + 1;
+        
+   if(game.getGamePhase() == 4)
+   {
+       myPos[1] = myPos[1];
+       myPos[2] = 1.0f;
+       if(myState[1] > 0.0f)
+       {
+           myPos[1] -= 2.5f;
+           
+           angles[1] = otherEuler[7] + PI + 3.0f;
+           game.setEulerTarget(myEuler);
+           myPos[2] = -1.0f;
+       }
+       
+        float vb[3];
+        mathVecSubtract(vb,myPos,myState,3);
+        api.setVelocityTarget(vb);
+   }
+    
+    
+}
+
+
+float distanceBetween(float a[], float b[])
+{
+    float res = 0;
+    for(int i = 0; i < 3; i++)
+    {
+        res = res + (a[i]-b[i])*(a[i]-b[i]);
+    }
+
+    return sqrtf(res);    
+}
+
+
+
+
+
